@@ -487,7 +487,7 @@ void charstring_pool_t::subroutinize(
     {
       std::vector<encoding_list> result;
       #pragma omp for nowait schedule(static)
-      for (unsigned i = 0; i < count; ++i) {
+      for (int i = 0; i < count; ++i) {
         charstring_t cs = getCharstring(i);
         result.push_back(optimizeCharstring(
                                   cs.begin,

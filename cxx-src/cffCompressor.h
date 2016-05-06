@@ -196,7 +196,7 @@ class charstring_pool_t {
     std::vector<uint8_t> fdSelect;
     std::vector<unsigned> rev;
     bool fdSelectTrivial;
-    unsigned count;
+    uint16_t count;
     bool finalized;
     int numRounds;
 
