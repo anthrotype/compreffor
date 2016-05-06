@@ -25,7 +25,6 @@
 const unsigned int_size = sizeof(int_type);
 const float K = 0.1;
 const float ALPHA = 0.1;
-const unsigned NUM_THREADS = 100;
 const unsigned DEFAULT_NUM_ROUNDS = 4;
 
 // token_t ============
@@ -449,11 +448,6 @@ void charstring_pool_t::subroutinize(
     substrMap[key] = &substr;
   }
 
-  unsigned substringChunkSize = substrings.size() / NUM_THREADS + 1;
-  unsigned glyphChunkSize = count / NUM_THREADS + 1;
-  std::vector<std::future< std::vector<encoding_list> > > futures;
-  std::vector<std::thread> threads;
-
   for (int runCount = 0; runCount < numRounds; ++runCount) {
     /// update market
     for (substring_t& substr : substrings) {
@@ -461,51 +455,53 @@ void charstring_pool_t::subroutinize(
     }
 
     /// minimize cost of substrings
-    // XXX consider redoing substringChunkSize
-    threads.clear();
-    auto curSubstr = substrings.begin();
-    for (unsigned i = 0; i < NUM_THREADS; ++i) {
-      if (i * substringChunkSize >= substrings.size())
-        break;
-
-      unsigned step = substringChunkSize;
-      if ((i + 1) * substringChunkSize > substrings.size())
-        step = substrings.size() - i * substringChunkSize;
-
-      auto start = curSubstr;
-      std::advance(curSubstr, step);
-
-      threads.push_back(std::thread(optimizeSubstrings,
-                            std::ref(substrMap),
-                            std::ref(*this),
-                            start,
-                            curSubstr));
-    }
-    for (auto threadIt = threads.begin(); threadIt != threads.end(); ++threadIt) {
-      threadIt->join();
+    #pragma omp parallel
+    {
+      int num_threads = omp_get_num_threads();
+      int thread_num = omp_get_thread_num();
+      size_t chunk_size = substrings.size() / num_threads;
+      auto begin = substrings.begin();
+      std::advance(begin, thread_num * chunk_size);
+      auto end = begin;
+      if (thread_num == num_threads - 1)
+        // last thread iterates the remaining substrings
+        end = substrings.end();
+      else
+        std::advance(end, chunk_size);
+      #pragma omp barrier
+      for (auto it = begin; it != end; ++it) {
+        auto ans = optimizeCharstring(
+                        it->begin(*this),
+                        it->size(),
+                        substrMap,
+                        *this,
+                        true);
+        it->encoding = ans.first;
+        it->setAdjCost(ans.second);
+      }
     }
 
     // minimize cost of glyphstrings
-    futures.clear();
     glyphEncodings.clear();
-    for (unsigned i = 0; i < NUM_THREADS; ++i) {
-      if (i * glyphChunkSize >= count)
-        break;
-
-      unsigned stop = (i + 1) * glyphChunkSize;
-      if (stop > count)
-        stop = count;
-
-      futures.push_back(std::async(std::launch::async,
-                            optimizeGlyphstrings,
-                            std::ref(substrMap),
-                            std::ref(*this),
-                            i * glyphChunkSize,
-                            stop));
-    }
-    for (auto threadIt = futures.begin(); threadIt != futures.end(); ++threadIt) {
-      std::vector<encoding_list> res = threadIt->get();
-      glyphEncodings.insert(glyphEncodings.end(), res.begin(), res.end());
+    #pragma omp parallel
+    {
+      std::vector<encoding_list> result;
+      #pragma omp for nowait schedule(static)
+      for (unsigned i = 0; i < count; ++i) {
+        charstring_t cs = getCharstring(i);
+        result.push_back(optimizeCharstring(
+                                  cs.begin,
+                                  cs.len,
+                                  substrMap,
+                                  *this,
+                                  false)
+                            .first);
+      }
+      #pragma omp for schedule(static) ordered
+      for(int i = 0; i < omp_get_num_threads(); i++) {
+          #pragma omp ordered
+          glyphEncodings.insert(glyphEncodings.end(), result.begin(), result.end());
+      }
     }
 
     // update usages
@@ -544,41 +540,6 @@ void charstring_pool_t::subroutinize(
       }
     }
   }
-}
-
-void optimizeSubstrings(std::map<light_substring_t, substring_t*> &substrMap,
-                        charstring_pool_t &csPool,
-                        std::list<substring_t>::iterator begin,
-                        std::list<substring_t>::iterator end) {
-  for (auto it = begin; it != end; ++it) {
-    auto ans = optimizeCharstring(
-                    it->begin(csPool),
-                    it->size(),
-                    substrMap,
-                    csPool,
-                    true);
-    it->encoding = ans.first;
-    it->setAdjCost(ans.second);
-  }
-}
-
-std::vector<encoding_list> optimizeGlyphstrings(
-                          std::map<light_substring_t, substring_t*> &substrMap,
-                          charstring_pool_t &csPool,
-                          unsigned start,
-                          unsigned stop) {
-  std::vector<encoding_list> result;
-  for (unsigned i = start; i < stop; ++i) {
-    charstring_t cs = csPool.getCharstring(i);
-    result.push_back(optimizeCharstring(
-                              cs.begin,
-                              cs.len,
-                              substrMap,
-                              csPool,
-                              false)
-                        .first);
-  }
-  return result;
 }
 
 std::pair<encoding_list, float> optimizeCharstring(
