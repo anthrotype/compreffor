@@ -19,7 +19,6 @@
 
 #include <assert.h>
 #include <forward_list>
-#include <future>
 #include <stdint.h>
 #include <string.h>
 #include <omp.h>
