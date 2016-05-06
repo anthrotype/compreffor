@@ -1,9 +1,9 @@
 O ?= 2
 
-CXXFLAGS = -std=c++0x -pthread -W -Wall -Wno-unused -Wno-unused-parameter
+CXXFLAGS = -std=c++0x -fopenmp -W -Wall -Wno-unused -Wno-unused-parameter
 CXXFLAGS += -DDEBUG -g
 CXXSOFLAGS = $(CXXFLAGS) -shared
-CC = g++
+CXX ?= g++
 DEPS = cffCompressor.h
 BIN = ../compreffor
 
@@ -24,12 +24,12 @@ endif
 
 all: $(executable) lib
 $(executable): cffCompressor.o
-	$(CC) $(CXXFLAGS) -o $(BIN)/$@ $(LDFLAGS) $^
+	$(CXX) $(CXXFLAGS) -o $(BIN)/$@ $(LDFLAGS) $^
 %.o: %.cc $(DEPS)
-	$(CC) $(CXXFLAGS) -o $@ -c -O$(O) $<
+	$(CXX) $(CXXFLAGS) -o $@ -c -O$(O) $<
 lib: $(sharedlib)
 $(sharedlib): cffCompressor.cc $(DEPS)
-	$(CC) $(CXXSOFLAGS) -o $(BIN)/$@ -O$(O) -fPIC $(LDFLAGS) $<
+	$(CXX) $(CXXSOFLAGS) -o $(BIN)/$@ -O$(O) -fPIC $(LDFLAGS) $<
 clean:
 	rm -rf cffCompressor.o $(BIN)/$(executable) $(BIN)/$(sharedlib) $(BIN)/$(sharedlib).dSYM
 ALL: clean all
