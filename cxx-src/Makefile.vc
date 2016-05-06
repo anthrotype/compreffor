@@ -1,4 +1,4 @@
-CXXFLAGS = /nologo /O2 /EHsc /Zi
+CXXFLAGS = /nologo /O2 /EHsc /Zi /openmp
 BIN = ..\compreffor
 
 SRC_NAME = cffCompressor
