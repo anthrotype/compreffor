@@ -22,7 +22,7 @@
 #include <future>
 #include <stdint.h>
 #include <string.h>
-#include <thread>
+#include <omp.h>
 
 #include <algorithm>
 #include <fstream>
