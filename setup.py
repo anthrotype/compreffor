@@ -2,13 +2,7 @@
 from __future__ import print_function
 from setuptools import setup
 from setuptools.extension import Library
-from distutils.command.build import build
-from distutils.command.install_lib import install_lib
-from distutils.command.clean import clean
-from distutils.cmd import Command
-import sys
 import os
-import subprocess
 
 try:
     import fontTools
@@ -31,13 +25,15 @@ setup(
             "compreffor.compreff",
             sources=[
                 os.path.join(CXX_SOURCES, "cffCompressor.cc"),
-                ],
+            ],
             extra_compile_args=[
                 "-std=c++0x", "-fopenmp", "-W", "-Wall", "-Wno-unused",
                 "-Wno-unused-parameter", "-g",
             ],
             extra_link_args=["-fopenmp"],
-            define_macros=[('DEBUG', None),],
+            define_macros=[
+                ('DEBUG', None),
+            ],
             export_symbols=["compreff", "unload"],
             depends=[
                 os.path.join(CXX_SOURCES, "cffCompressor.h"),
