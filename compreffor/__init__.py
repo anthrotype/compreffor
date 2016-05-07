@@ -93,6 +93,8 @@ if sys.platform == 'win32':
 # platform-specific shared library name
 if sys.platform == 'win32':
     LIB_NAME = 'compreff.dll'
+elif sys.platform == 'darwin':
+    LIB_NAME = 'libcompreff.dylib'
 else:
     LIB_NAME = 'libcompreff.so'
 
