@@ -27,7 +27,7 @@ setup(
                 os.path.join(CXX_SOURCES, "cffCompressor.cc"),
             ],
             extra_compile_args=[
-                "-std=c++0x", "-pthread", "-W", "-Wall", "-Wno-unused",
+                "-std=c++0x", "-pthread", "-O2", "-Wextra", "-Wno-unused",
                 "-Wno-unused-parameter", "-g",
             ],
             define_macros=[
