@@ -1,4 +1,4 @@
-LIBRARY   compreff
+LIBRARY compreff.dll
 EXPORTS
-   compreff   @1
-   unload     @2
+compreff
+unload
